@@ -15,16 +15,26 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Global variables provided by the Canvas environment (these will be injected at runtime)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // !!! IMPORTANT: REPLACE WITH YOUR OWN FIREBASE CONFIG !!!
+        // 1. Go to https://console.firebase.google.com/
+        // 2. Create a new project or select an existing one.
+        // 3. In Project settings (gear icon) -> "General" tab -> "Your apps" section -> Add an app (web icon </>).
+        // 4. Copy the "Firebase SDK config" object and paste it below.
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTYHdEKxTF4Rr5VaVQjVftWHRA0JzuPr4",
+            authDomain: "phonestobuy-dc7c2.firebaseapp.com",
+            projectId: "phonestobuy-dc7c2",
+            storageBucket: "phonestobuy-dc7c2.firebasestorage.app",
+            messagingSenderId: "335871981671",
+            appId: "1:335871981671:web:4403a8490d6068aac2fcc2",
+            measurementId: "G-T6M5WD54LR"
+        };
+        // !!! END IMPORTANT SECTION - DO NOT FORGET THIS !!!
 
         let db;
         let auth;
-        let ownerUserId = null; // This will store the authenticated owner's UID
 
-        // Initialize Firebase and Authenticate
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         db = getFirestore(app);
         auth = getAuth(app);
@@ -32,56 +42,50 @@
         // Function to handle authentication and view counting
         async function setupViewCounter() {
             try {
-                // Sign in using custom token if available (for Canvas owner), otherwise anonymously
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
+                // Sign in anonymously for all visitors
+                await signInAnonymously(auth);
+
+                // Use a single document for total views
+                const totalViewsDocRef = doc(db, "website_stats", "total_views");
+
+                // Increment the view count
+                try {
+                    await updateDoc(totalViewsDocRef, {
+                        count: increment(1),
+                        lastVisit: new Date().toISOString()
+                    }, { merge: true }); // merge: true ensures it updates or creates without overwriting other fields
+                    // console.log("View count incremented successfully!"); // For debugging
+                } catch (e) {
+                    // If the document doesn't exist yet (first visit), set it initially
+                    if (e.code === 'not-found') {
+                         // console.log("Attempting to set initial view count..."); // For debugging
+                         await setDoc(totalViewsDocRef, {
+                             count: 1,
+                             lastVisit: new Date().toISOString(),
+                             createdAt: new Date().toISOString()
+                         });
+                         // console.log("Initial view count set!"); // For debugging
+                    } else {
+                        console.error("Error incrementing view count:", e);
+                    }
                 }
 
-                // Set the ownerUserId to the authenticated user's UID
-                ownerUserId = auth.currentUser?.uid; 
-
-                if (ownerUserId) {
-                    // console.log("Firebase Authenticated as UID:", ownerUserId); // For debugging: will show your UID in console
-                    const appStatsDocRef = doc(db, `artifacts/${appId}/users/${ownerUserId}/website_stats/views`);
-
-                    // Increment the view count
-                    try {
-                        await updateDoc(appStatsDocRef, {
-                            count: increment(1),
-                            lastVisit: new Date().toISOString()
-                        }, { merge: true }); // merge: true ensures it updates or creates without overwriting other fields
-                        // console.log("View count incremented successfully!"); // For debugging
-                    } catch (e) {
-                        // If the document doesn't exist yet (first visit), set it initially
-                        if (e.code === 'not-found') {
-                             // console.log("Attempting to set initial view count..."); // For debugging
-                             await setDoc(appStatsDocRef, {
-                                 count: 1,
-                                 lastVisit: new Date().toISOString(),
-                                 createdAt: new Date().toISOString()
-                             });
-                             // console.log("Initial view count set!"); // For debugging
-                        } else {
-                            console.error("Error incrementing view count:", e);
-                        }
-                    }
-
-                    // Fetch and log the current count (private to console for the site owner)
-                    const docSnap = await getDoc(appStatsDocRef);
-                    if (docSnap.exists()) {
-                        console.log("Total views for your website:", docSnap.data().count);
-                        // If you want to temporarily display this on the page for yourself during testing,
-                        // uncomment the line below and the HTML div with id="private-view-count"
-                        // document.getElementById('private-view-count').textContent = `Total Views (Private): ${docSnap.data().count}`;
-                    }
+                // Fetch and log the current count (private to console for the site owner/any viewer)
+                const docSnap = await getDoc(totalViewsDocRef);
+                if (docSnap.exists()) {
+                    console.log("Total views for your website:", docSnap.data().count);
+                    // If you want to temporarily display this on the page for yourself during testing,
+                    // uncomment the line below and the HTML div with id="private-view-count"
+                    // document.getElementById('private-view-count').textContent = `Total Views (Private): ${docSnap.data().count}`;
                 } else {
-                    console.warn("Could not get authenticated user ID for view counter. Check Firebase setup or authentication.");
+                    console.log("Total views document not found. It will be created on the first successful increment.");
                 }
 
             } catch (error) {
                 console.error("Error setting up Firebase authentication or view counter:", error);
+                if (error.code === 'app/no-project-id') {
+                    console.error("Firebase Initialization Error: 'projectId' is missing in your firebaseConfig. Please ensure you've pasted your correct Firebase config from your Firebase project settings.");
+                }
             }
         }
 
@@ -344,7 +348,7 @@
                 price_range: "₹1 Lakh+",
                 category: "₹1 Lakh+ (Flagship)",
                 features: ["Best flagship overall", "Leads in Geekbench multi-core & PC Mark battery life", "Refined experience", "Excellent camera system", "S Pen & ecosystem features"],
-                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Samsung+S24+Ultra"
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Samsung+Galaxy+S24+Ultra"
             },
             {
                 model: "Xiaomi 14 Pro",
