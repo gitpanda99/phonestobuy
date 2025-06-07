@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Best Smartphones to Buy in 2025</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs for View Counter -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Global variables provided by the Canvas environment (these will be injected at runtime)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db;
+        let auth;
+        let ownerUserId = null; // This will store the authenticated owner's UID
+
+        // Initialize Firebase and Authenticate
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        // Function to handle authentication and view counting
+        async function setupViewCounter() {
+            try {
+                // Sign in using custom token if available (for Canvas owner), otherwise anonymously
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Set the ownerUserId to the authenticated user's UID
+                ownerUserId = auth.currentUser?.uid; 
+
+                if (ownerUserId) {
+                    // console.log("Firebase Authenticated as UID:", ownerUserId); // For debugging: will show your UID in console
+                    const appStatsDocRef = doc(db, `artifacts/${appId}/users/${ownerUserId}/website_stats/views`);
+
+                    // Increment the view count
+                    try {
+                        await updateDoc(appStatsDocRef, {
+                            count: increment(1),
+                            lastVisit: new Date().toISOString()
+                        }, { merge: true }); // merge: true ensures it updates or creates without overwriting other fields
+                        // console.log("View count incremented successfully!"); // For debugging
+                    } catch (e) {
+                        // If the document doesn't exist yet (first visit), set it initially
+                        if (e.code === 'not-found') {
+                             // console.log("Attempting to set initial view count..."); // For debugging
+                             await setDoc(appStatsDocRef, {
+                                 count: 1,
+                                 lastVisit: new Date().toISOString(),
+                                 createdAt: new Date().toISOString()
+                             });
+                             // console.log("Initial view count set!"); // For debugging
+                        } else {
+                            console.error("Error incrementing view count:", e);
+                        }
+                    }
+
+                    // Fetch and log the current count (private to console for the site owner)
+                    const docSnap = await getDoc(appStatsDocRef);
+                    if (docSnap.exists()) {
+                        console.log("Total views for your website:", docSnap.data().count);
+                        // If you want to temporarily display this on the page for yourself during testing,
+                        // uncomment the line below and the HTML div with id="private-view-count"
+                        // document.getElementById('private-view-count').textContent = `Total Views (Private): ${docSnap.data().count}`;
+                    }
+                } else {
+                    console.warn("Could not get authenticated user ID for view counter. Check Firebase setup or authentication.");
+                }
+
+            } catch (error) {
+                console.error("Error setting up Firebase authentication or view counter:", error);
+            }
+        }
+
+        // Run the view counter setup when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', setupViewCounter);
+    </script>
+
+    <style>
+        /* Custom styles for gradients and font */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000; /* Pure black background */
+        }
+        /* New premium gold/amber gradient */
+        .text-gradient-gold-amber {
+            background: linear-gradient(to right, #FFD700, #FFA500); /* Gold to Orange */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* New premium blue gradient */
+        .text-gradient-deep-blue {
+            background: linear-gradient(to right, #4A90E2, #2A64B6); /* Deeper Blue */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* Styling for phone sections and their animated content */
+        .phone-section {
+            background-color: #1A1A1A; /* Slightly lighter black for sections */
+            border-radius: 1rem; /* More rounded corners */
+            /* Enhanced shadow for a more premium feel */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 10px 20px -5px rgba(0, 0, 0, 0.2);
+            padding: 3rem; /* Significantly increased padding for more space */
+            margin-bottom: 4rem; /* Increased margin for more separation */
+            overflow: hidden; /* Ensures content doesn't spill during animation */
+            cursor: pointer; /* Indicate interactivity */
+            width: 100%; /* Ensure sections take full width of their container */
+            max-width: 900px; /* Limit max width for better readability on very wide screens */
+        }
+
+        .phone-details {
+            opacity: 0;
+            max-height: 0; /* Initially collapse the space */
+            overflow: hidden;
+            transform: translateY(20px); /* Start slightly below */
+            /* Smoother and slightly longer animation for all properties */
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out, max-height 0.6s ease-in-out;
+            transition-delay: 0.1s; /* Slight delay for a staggered effect */
+        }
+
+        /* Show phone details on hover */
+        .phone-section:hover .phone-details {
+            opacity: 1;
+            max-height: 500px; /* A large enough value to accommodate content */
+            transform: translateY(0);
+        }
+
+        /* Responsive image sizing within sections */
+        .phone-image {
+            width: 100%;
+            height: 300px; /* Increased height for prominence */
+            object-fit: cover;
+            border-radius: 0.75rem; /* More rounded image corners */
+            margin-bottom: 2rem; /* Increased bottom margin for more space */
+        }
+        @media (min-width: 768px) { /* md breakpoint */
+            .phone-image {
+                width: 350px; /* Increased fixed width on larger screens */
+                height: 300px;
+                margin-bottom: 0; /* Remove bottom margin when next to text */
+            }
+        }
+    </style>
+</head>
+<body class="bg-black text-gray-100 antialiased">
+
+    <!-- Header Section -->
+    <header class="bg-gray-950 shadow-lg py-8 px-8 md:px-16 flex justify-center items-center rounded-b-2xl">
+        <div class="flex items-center">
+            <svg class="w-10 h-10 text-yellow-400 mr-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l3 3a1 1 0 001.414-1.414L11 9.586V6z" clip-rule="evenodd"></path>
+            </svg>
+            <h1 class="text-4xl md:text-5xl font-bold text-gradient-gold-amber">Best Smartphones to Buy in 2025</h1>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="container mx-auto p-8 md:p-16">
+
+        <!-- Introduction Section -->
+        <section class="mb-20 text-center">
+            <p class="text-2xl text-gray-300 max-w-5xl mx-auto leading-relaxed">
+                Navigating the vast smartphone market can be a challenge. We've compiled a meticulously curated list of the best smartphones to consider in 2025, categorized by price range, to help you make an informed decision. Hover over each section to reveal detailed specifications!
+            </p>
+            <!-- Private View Counter Display (Uncomment for testing by site owner) -->
+            <!-- <div id="private-view-count" class="mt-8 text-lg text-blue-500 font-semibold"></div> -->
+        </section>
+
+        <!-- Dynamic Phone Sections will be injected here by JavaScript -->
+        <div id="phone-sections-container" class="flex flex-col items-center"></div>
+
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="bg-gray-950 py-10 px-8 md:px-16 mt-16 rounded-t-2xl">
+        <div class="container mx-auto text-center text-gray-400">
+            <p class="text-base">&copy; 2025 Smartphone Guide. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const phonesData = [
+            // Best Phones Under ₹15,000
+            {
+                model: "iQOO Z9x",
+                price_range: "Under ₹15,000",
+                category: "Under ₹15,000",
+                features: ["Leads in benchmark scores", "Strong real-world gaming performance", "Good battery life", "Performance-focused"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=iQOO+Z9x"
+            },
+            {
+                model: "Vivo Y18e",
+                price_range: "Under ₹15,000",
+                category: "Under ₹15,000",
+                features: ["Fastest charging in its segment", "Reliable everyday performance"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Vivo+Y18e"
+            },
+            {
+                model: "Redmi 13C",
+                price_range: "Under ₹15,000",
+                category: "Under ₹15,000",
+                features: ["Great display for entertainment", "Stereo speakers for immersive audio", "Value for money"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Redmi+13C"
+            },
+
+            // Best Phones Under ₹25,000
+            {
+                model: "OnePlus Nord CE4",
+                price_range: "Under ₹25,000",
+                category: "Under ₹25,000",
+                features: ["Excels in camera performance (various lighting)", "Good display", "Metal body design", "Large 5500mAh battery"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=OnePlus+Nord+CE4"
+            },
+            {
+                model: "Motorola Edge 50 Neo",
+                price_range: "Under ₹25,000",
+                category: "Under ₹25,000",
+                features: ["Compact and sleek design", "Versatile camera with telephoto lens", "Clean software experience"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Motorola+Edge+50+Neo"
+            },
+            {
+                model: "Poco X6 Pro",
+                price_range: "Under ₹25,000",
+                category: "Under ₹25,000",
+                features: ["Well-rounded experience", "Good display and stereo speakers", "Smooth performance", "Good camera system", "Fast charging"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Poco+X6+Pro"
+            },
+
+            // Best Phones Under ₹35,000
+            {
+                model: "Realme GT 6T",
+                price_range: "Under ₹35,000",
+                category: "Under ₹35,000",
+                features: ["Dominates in benchmark scores", "Top-notch display (brightness, colors)", "Smooth performance", "Fast charging", "Best overall in this range"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Realme+GT+6T"
+            },
+            {
+                model: "OnePlus Nord CE4", // Re-listed as it's a strong contender in this category too
+                price_range: "Under ₹35,000",
+                category: "Under ₹35,000",
+                features: ["Best battery backup in its segment", "Reliable camera performance", "Good software optimization"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=OnePlus+Nord+CE4_35K"
+            },
+            {
+                model: "Motorola Edge 50 Pro",
+                price_range: "Under ₹35,000",
+                category: "Under ₹35,000",
+                features: ["Premium design and build quality", "Strong overall performance", "Excellent display"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Motorola+Edge+50+Pro"
+            },
+
+            // Best Phones Under ₹45,000
+            {
+                model: "OnePlus 13R",
+                price_range: "Under ₹45,000",
+                category: "Under ₹45,000",
+                features: ["Leads in benchmark scores", "Excellent performance", "Stunning display", "Useful telephoto lens", "Reliable battery life"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=OnePlus+13R"
+            },
+            {
+                model: "Realme GT 6",
+                price_range: "Under ₹45,000",
+                category: "Under ₹45,000",
+                features: ["High-performance processor", "Vibrant display", "Strong overall package for gaming and daily use"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Realme+GT+6"
+            },
+            {
+                model: "iQOO Neo 9 Pro",
+                price_range: "Under ₹45,000",
+                category: "Under ₹45,000",
+                features: ["Fastest charging in its segment", "Powerful gaming performance", "Impressive display"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=iQOO+Neo+9+Pro"
+            },
+
+            // Best Phones Under ₹55,000
+            {
+                model: "iQOO 13",
+                price_range: "Under ₹55,000",
+                category: "Under ₹55,000",
+                features: ["Flagship performance (Snapdragon 8 Gen 3)", "Durable build quality", "Excellent for demanding tasks and gaming"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=iQOO+13"
+            },
+            {
+                model: "Motorola Edge 50 Ultra",
+                price_range: "Under ₹55,000",
+                category: "Under ₹55,000",
+                features: ["Best battery life in its class", "Fastest charging available", "Versatile camera system"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Motorola+Edge+50+Ultra"
+            },
+            {
+                model: "Honor Magic 6 Pro",
+                price_range: "Under ₹55,000",
+                category: "Under ₹55,000",
+                features: ["Innovative design", "Strong camera capabilities", "Smooth user experience"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Honor+Magic+6+Pro"
+            },
+
+            // Best Phones Under ₹75,000
+            {
+                model: "OnePlus 13",
+                price_range: "Under ₹75,000",
+                category: "Under ₹75,000",
+                features: ["Leads in benchmark scores, battery life, and charging speed", "Well-rounded flagship experience", "Clean UI and great camera"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=OnePlus+13"
+            },
+            {
+                model: "Vivo X100 Pro",
+                price_range: "Under ₹75,000",
+                category: "Under ₹75,000",
+                features: ["Exceptional camera system (especially zoom)", "Powerful performance", "Stunning display"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Vivo+X100+Pro"
+            },
+            {
+                model: "Xiaomi 14",
+                price_range: "Under ₹75,000",
+                category: "Under ₹75,000",
+                features: ["Compact flagship design", "Excellent camera performance in various conditions", "Fluid performance"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Xiaomi+14"
+            },
+
+            // Best Flagship Smartphones (₹1 Lakh+)
+            {
+                model: "Vivo X100 Pro", // Re-listed as it's also a flagship contender
+                price_range: "₹1 Lakh+",
+                category: "₹1 Lakh+ (Flagship)",
+                features: ["Highest AnTuTu benchmark score", "Professional-grade camera capabilities", "Premium design"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Vivo+X100+Pro_Flagship"
+            },
+            {
+                model: "Samsung Galaxy S24 Ultra",
+                price_range: "₹1 Lakh+",
+                category: "₹1 Lakh+ (Flagship)",
+                features: ["Best flagship overall", "Leads in Geekbench multi-core & PC Mark battery life", "Refined experience", "Excellent camera system", "S Pen & ecosystem features"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Samsung+S24+Ultra"
+            },
+            {
+                model: "Xiaomi 14 Pro",
+                price_range: "₹1 Lakh+",
+                category: "₹1 Lakh+ (Flagship)",
+                features: ["Fastest charging among flagships", "Top-tier performance", "Impressive display and camera system"],
+                image: "https://placehold.co/600x350/1A1A1A/FFFFFF?text=Xiaomi+14+Pro"
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const phoneSectionsContainer = document.getElementById('phone-sections-container');
+            
+            const categories = [
+                "Under ₹15,000",
+                "Under ₹25,000",
+                "Under ₹35,000",
+                "Under ₹45,000",
+                "Under ₹55,000",
+                "Under ₹75,000",
+                "₹1 Lakh+ (Flagship)"
+            ];
+
+            // Function to create a phone section HTML
+            function createPhoneSection(phone) {
+                const featuresList = phone.features.map(feature => `<li class="text-gray-300 text-xl">${feature}</li>`).join('');
+                return `
+                    <section class="phone-section">
+                        <div class="flex flex-col md:flex-row items-center md:items-start gap-12">
+                            <img src="${phone.image}" alt="${phone.model}" class="phone-image">
+                            <div class="flex-grow text-center md:text-left">
+                                <h4 class="text-5xl font-bold text-gradient-gold-amber mb-4">${phone.model}</h4>
+                                <p class="text-2xl text-gray-300 mb-8">Price Range: ${phone.price_range}</p>
+                                <p class="text-xl text-gray-400">Category: ${phone.category}</p>
+                            </div>
+                        </div>
+                        <div class="phone-details mt-10">
+                            <h5 class="text-3xl font-semibold text-blue-400 mb-6">Key Highlights:</h5>
+                            <ul class="list-disc list-inside space-y-4">
+                                ${featuresList}
+                            </ul>
+                        </div>
+                    </section>
+                `;
+            }
+
+            categories.forEach(category => {
+                // Add a category heading
+                const categoryHeading = document.createElement('h3');
+                categoryHeading.className = 'text-4xl md:text-5xl font-bold text-gradient-gold-amber mb-12 mt-16 text-center'; // Larger, gold, centered
+                categoryHeading.textContent = category;
+                phoneSectionsContainer.appendChild(categoryHeading);
+
+                // Filter and add phones for this category
+                const phonesInCategory = phonesData.filter(phone => phone.category === category);
+                phonesInCategory.forEach(phone => {
+                    phoneSectionsContainer.innerHTML += createPhoneSection(phone);
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
