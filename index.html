@@ -157,6 +157,35 @@
                 margin-bottom: 0; /* Remove bottom margin when next to text */
             }
         }
+        /* Style for the hidden link to laptops site */
+        #laptops-site-link-container {
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            text-align: center;
+            margin-top: 3rem; /* Space from content above */
+            padding-top: 2rem;
+            border-top: 1px solid #333; /* Subtle separator */
+        }
+        #laptops-site-link-container.show {
+            opacity: 1;
+        }
+        #laptops-site-link-container a {
+            font-size: 1.8rem; /* Larger link text */
+            font-weight: bold;
+            color: #818cf8; /* Light blue/purple for the link */
+            text-decoration: none;
+            display: inline-block; /* Allows padding and hover effect */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            background-color: #2a2a2a; /* Dark background for link button */
+            transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        #laptops-site-link-container a:hover {
+            background-color: #4a4a4a; /* Slightly lighter on hover */
+            color: #c7d2fe; /* Brighter blue on hover */
+            transform: translateY(-2px); /* Slight lift effect */
+        }
     </style>
 </head>
 <body class="bg-black text-gray-100 antialiased">
@@ -185,6 +214,14 @@
 
         <!-- Dynamic Phone Sections will be injected here by JavaScript -->
         <div id="phone-sections-container" class="flex flex-col items-center"></div>
+
+        <!-- Link to Laptops Site (Initially Hidden) -->
+        <div id="laptops-site-link-container" class="mt-16 text-center">
+            <p class="text-xl text-gray-400 mb-4">Looking for Laptops instead?</p>
+            <a href="https://gitpanda99.github.io/laptopstobuy/" target="_blank" rel="noopener noreferrer">
+                Go to Best Laptops to Buy
+            </a>
+        </div>
 
     </main>
 
@@ -361,6 +398,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const phoneSectionsContainer = document.getElementById('phone-sections-container');
+            const laptopsSiteLinkContainer = document.getElementById('laptops-site-link-container');
             
             const categories = [
                 "Under ₹15,000",
@@ -408,6 +446,11 @@
                     phoneSectionsContainer.innerHTML += createPhoneSection(phone);
                 });
             });
+
+            // Timer to show the laptops site link
+            setTimeout(() => {
+                laptopsSiteLinkContainer.classList.add('show');
+            }, 12000); // 12000 milliseconds = 12 seconds
         });
     </script>
 
